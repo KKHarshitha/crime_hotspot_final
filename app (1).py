@@ -327,7 +327,7 @@ def location_wise_analysis():
             hotspot_lat, hotspot_lon = row["Latitude"], row["Longitude"]
             if pd.notnull(hotspot_lat) and pd.notnull(hotspot_lon):
                 distance_km = geodesic((user_lat, user_lon), (hotspot_lat, hotspot_lon)).km
-                if distance_km <= 5 and row["Crime_severity"].lower() == "high":
+                if distance_km <= 5 and row["Crime_severity"] in ["High", "Moderate"]:
                     hotspots.append((row["Area Name"], hotspot_lat, hotspot_lon))
 
         if hotspots:
