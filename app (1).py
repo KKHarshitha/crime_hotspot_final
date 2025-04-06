@@ -173,7 +173,9 @@ def city_wise_analysis():
             crime_rate = model.predict([[int(year), int(city_code), pop, int(crime_code)]])[0]
             
             # Adjust crime rate scaling based on data distribution
-            crime_rate *= 10  # Adjust factor if needed
+            
+            crime_rate *= 20  # Instead of 10
+
 
         except Exception as e:
             st.error(f"Prediction error: {e}")
@@ -183,21 +185,17 @@ def city_wise_analysis():
         cases = math.ceil(crime_rate * pop)
 
         # 🔴 Improved Crime Severity Categories
-        if crime_rate < 1:
+        if crime_rate < 2:
             crime_status = "🟢 Very Low Crime Area"
-            color = "green"
-        elif crime_rate < 10:
+        elif crime_rate < 20:
             crime_status = "🟡 Low Crime Area"
-            color = "yellow"
-        elif crime_rate < 50:
+        elif crime_rate < 100:
             crime_status = "🟠 Moderate Crime Area"
-            color = "orange"
-        elif crime_rate < 200:
+        elif crime_rate < 500:
             crime_status = "🔴 High Crime Area"
-            color = "red"
         else:
             crime_status = "🔥 Extremely High Crime Area"
-            color = "darkred"
+
 
         # Display results
         st.subheader("📊 Prediction Results")
