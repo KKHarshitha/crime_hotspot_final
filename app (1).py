@@ -180,13 +180,16 @@ def city_wise_analysis():
         st.write(f"🔍 Debug: Predicted Cases = {cases}")
 
         # 🔴 Improved Crime Severity Categories Based on Predicted Cases
-        if cases <= 100:
+        if cases <= 50:
+            crime_status = "🟢 Very Low Crime Area"
+            color = "green"
+        elif 51 <= cases <= 100:
             crime_status = "🟡 Low Crime Area"
             color = "yellow"
-        elif 101 <= cases <= 500:
+        elif 101 <= cases <= 160:
             crime_status = "🟠 Moderate Crime Area"
             color = "orange"
-        elif 501 <= cases <= 1000:
+        elif 161 <= cases <= 200:
             crime_status = "🔴 High Crime Area"
             color = "red"
         else:
