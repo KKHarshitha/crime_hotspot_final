@@ -148,6 +148,7 @@ def login_page():
         st.success("Logged in successfully!")
         st.rerun()
 
+
 import math
 
 # City-wise Crime Analysis
@@ -163,9 +164,9 @@ def city_wise_analysis():
         # Fetch population data for the selected city
         pop = population.get(city_code, 0)
         
-        # Adjust population based on the year (assuming 1% annual growth)
+        # Adjust population based on the year (using compounded 1% annual growth)
         year_diff = year - 2015
-        pop = pop + 0.01 * year_diff * pop
+        pop = pop * (1.01 ** year_diff)  # 1% yearly growth using exponential formula
         
         try:
             # Predict crime rate using the model
@@ -176,34 +177,35 @@ def city_wise_analysis():
 
         # Calculate estimated number of cases
         cases = math.ceil(crime_rate * pop)
-        
-        # Determine crime severity status
-        if crime_rate <= 0.1:
-            crime_status = "🟢 Very Low Crime Area"
-            color = "green"
-        elif crime_rate <= 19:
+        st.write(f"🔍 Debug: Predicted Cases = {cases}")
+
+        # 🔴 Improved Crime Severity Categories Based on Predicted Cases
+        if cases <= 100:
             crime_status = "🟡 Low Crime Area"
             color = "yellow"
-        elif crime_rate <= 98:
-            crime_status = "🟠 High Crime Area"
+        elif 101 <= cases <= 500:
+            crime_status = "🟠 Moderate Crime Area"
             color = "orange"
-        else:
-            crime_status = "🔴 Very High Crime Area"
+        elif 501 <= cases <= 1000:
+            crime_status = "🔴 High Crime Area"
             color = "red"
-
+        else:
+            crime_status = "🔥 Extremely High Crime Area"
+            color = "darkred"
+        
         # Display results with styling
         st.subheader("📊 Prediction Results")
         st.write(f"🏙 **City:** {city_names[city_code]}")
         st.write(f"⚖ **Crime Type:** {crimes_names[crime_code]}")
         st.write(f"📅 **Year:** {year}")
         st.write(f"👥 **Population:** {pop:.2f} Lakhs")
+        st.write(f"🔍 Debug Before Classification: Predicted Cases = {cases}")
         st.markdown(f"<h3 style='color:{color};'>🚔 Predicted Cases: {cases}</h3>", unsafe_allow_html=True)
         st.markdown(f"<h3 style='color:{color};'>⚠ Crime Severity: {crime_status}</h3>", unsafe_allow_html=True)
 
         # Display crime prevention suggestion
         st.markdown("### 💡 Safety Tip:")
         st.write(f"🛑 {crime_suggestions[crime_code]}")
-
 
 # District-wise Crime Analysis
 def district_wise_analysis():
