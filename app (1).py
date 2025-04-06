@@ -183,13 +183,13 @@ def city_wise_analysis():
         if cases <= 50:
             crime_status = "🟢 Very Low Crime Area"
             color = "green"
-        elif 51 <= cases <= 100:
+        elif 51 <= cases <= 85:
             crime_status = "🟡 Low Crime Area"
             color = "yellow"
-        elif 101 <= cases <= 160:
+        elif 86 <= cases <= 120:
             crime_status = "🟠 Moderate Crime Area"
             color = "orange"
-        elif 161 <= cases <= 200:
+        elif 121 <= cases <= 170:
             crime_status = "🔴 High Crime Area"
             color = "red"
         else:
@@ -283,7 +283,6 @@ def district_wise_analysis():
             st.markdown("<div class='warning-alert'>🟠 Moderate risk; stay cautious.</div>", unsafe_allow_html=True)
         else:
             st.markdown("<div class='danger-alert'>🔴 High risk! Precaution is advised.</div>", unsafe_allow_html=True)
-# Location-wise Crime Analysis
 
 # Location-wise Crime Analysis
 # Load dataset from Pickle file
