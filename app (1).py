@@ -129,6 +129,25 @@ def calculate_crime_severity(df):
     crime_index = (weighted_sum / max_possible) * 100 if max_possible > 0 else 0
     return round(crime_index, 2)
 
+# Login Page
+def login_page():
+    st.title("🔐 Login Page")
+    name = st.text_input("Name")
+    age = st.number_input("Age", min_value=0, max_value=120)
+    married_status = st.selectbox("Married Status", ["Single", "Married", "Divorced", "Widowed"])
+    gender = st.radio("Gender", ["Male", "Female", "Other"])
+    
+    if st.button("Login"):
+        st.session_state['logged_in'] = True
+        st.session_state['user_info'] = {
+            'name': name,
+            'age': age,
+            'married_status': married_status,
+            'gender': gender
+        }
+        st.success("Logged in successfully!")
+        st.rerun()
+
 import math
 
 # City-wise Crime Analysis
@@ -370,6 +389,9 @@ def location_wise_analysis():
 def main():
     if 'logged_in' not in st.session_state:
         st.session_state['logged_in'] = False
+
+    if not st.session_state['logged_in']:
+        login_page()
     else:
         st.sidebar.title(f"Welcome, {st.session_state['user_info']['name']}!")
         st.sidebar.write(f"Age: {st.session_state['user_info']['age']}")
