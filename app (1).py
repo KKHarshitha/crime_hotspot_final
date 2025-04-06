@@ -149,6 +149,9 @@ def login_page():
         st.rerun()
 
 # City-wise Crime Analysis
+
+import math
+
 def city_wise_analysis():
     st.title("🏙 City-wise Crime Analysis")
     
@@ -158,53 +161,59 @@ def city_wise_analysis():
     year = st.number_input("📅 Enter Year", min_value=2024, max_value=2050, step=1, value=2024)
 
     if st.button("🔮 Predict Crime Rate"):
-    # Fetch population data for the selected city
+        # Fetch population data for the selected city
         pop = population.get(city_code, 0)
 
-    # Adjust population based on the year (assuming 5% annual growth)
+        # Adjust population based on the year (assuming 5% annual growth)
         year_diff = year - 2015
         pop = pop * (1.05 ** year_diff)  # 5% yearly growth
 
-    try:
-        # Predict crime rate using the model
-        crime_rate = model.predict([[int(year), int(city_code), pop, int(crime_code)]])[0]
-        
-        # Scale up crime rate to get higher values
-        crime_rate *= 100  # Increase crime rate values
+        try:
+            # Predict crime rate using the model
+            crime_rate = model.predict([[int(year), int(city_code), pop, int(crime_code)]])[0]
 
-    except Exception as e:
-        st.error(f"Prediction error: {e}")
-        st.stop()
+            # Scale crime rate dynamically
+            if crime_rate < 0.01:
+                crime_rate *= 100  # Boost very low values
+            elif crime_rate < 1:
+                crime_rate *= 10  # Moderate increase
+            else:
+                crime_rate *= 1  # Keep higher values unchanged
 
-    # Calculate estimated number of cases
-    cases = math.ceil(crime_rate * pop)
+        except Exception as e:
+            st.error(f"Prediction error: {e}")
+            st.stop()
 
-    # Determine crime severity status
-    if crime_rate <= 0.01:
-        crime_status = "🟢 Very Low Crime Area"
-        color = "green"
-    elif crime_rate <= 0.1:
-        crime_status = "🟡 Low Crime Area"
-        color = "yellow"
-    elif crime_rate <= 1:
-        crime_status = "🟠 High Crime Area"
-        color = "orange"
-    else:
-        crime_status = "🔴 Very High Crime Area"
-        color = "red"
+        # Calculate estimated number of cases
+        cases = math.ceil(crime_rate * pop)
 
-    # Display results
-    st.subheader("📊 Prediction Results")
-    st.write(f"🏙 **City:** {city_names[city_code]}")
-    st.write(f"⚖ **Crime Type:** {crimes_names[crime_code]}")
-    st.write(f"📅 **Year:** {year}")
-    st.write(f"👥 **Population:** {pop:.2f} Lakhs")
-    st.markdown(f"<h3 style='color:{color};'>🚔 Predicted Cases: {cases}</h3>", unsafe_allow_html=True)
-    st.markdown(f"<h3 style='color:{color};'>⚠ Crime Severity: {crime_status}</h3>", unsafe_allow_html=True)
+        # Determine crime severity status
+        if crime_rate <= 1:
+            crime_status = "🟢 Very Low Crime Area"
+            color = "green"
+        elif crime_rate <= 5:
+            crime_status = "🟡 Low Crime Area"
+            color = "yellow"
+        elif crime_rate <= 20:
+            crime_status = "🟠 High Crime Area"
+            color = "orange"
+        else:
+            crime_status = "🔴 Very High Crime Area"
+            color = "red"
 
-    # Display crime prevention suggestion
-    st.markdown("### 💡 Safety Tip:")
-    st.write(f"🔍 Debug: Crime Rate = {crime_rate}")
+        # Display results
+        st.subheader("📊 Prediction Results")
+        st.write(f"🏙 **City:** {city_names[city_code]}")
+        st.write(f"⚖ **Crime Type:** {crimes_names[crime_code]}")
+        st.write(f"📅 **Year:** {year}")
+        st.write(f"👥 **Population:** {pop:.2f} Lakhs")
+        st.markdown(f"<h3 style='color:{color};'>🚔 Predicted Cases: {cases}</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='color:{color};'>⚠ Crime Severity: {crime_status}</h3>", unsafe_allow_html=True)
+
+        # Display crime prevention suggestion
+        st.markdown("### 💡 Safety Tip:")
+        st.write(f"🔍 Debug: Crime Rate = {crime_rate}")
+
 
 # District-wise Crime Analysis
 def district_wise_analysis():
