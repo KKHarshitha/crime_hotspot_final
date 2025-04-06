@@ -310,15 +310,27 @@ db = DBSCAN(eps=10/6371, min_samples=2, metric="haversine").fit(np.radians(coord
 crime_data["Cluster"] = db.labels_
 
 # Function to analyze location-wise crime
-# Load dataset from Pickle file
-crime_data = pd.read_pickle("eluru_bvrm_mtm.pkl")  # Load Pickle instead of CSV
+# import pandas as pd
+import re
+
+# Load dataset
+crime_data = pd.read_csv("eluru_bvrm_mtm.csv")  # Ensure correct file path
 
 # Remove leading/trailing spaces from column names
 crime_data.columns = crime_data.columns.str.strip()
 
-# Function to clean latitude and longitude
+# Function to convert latitude and longitude from '16.6382° N' to decimal format
+def convert_to_decimal(coord):
+    match = re.match(r"([\d.]+)°\s*([NSEW])", coord.strip())
+    if match:
+        value, direction = match.groups()
+        value = float(value)
+        if direction in ["S", "W"]:  # Convert to negative for South and West
+            value = -value
+        return value
+    return None  # If the format is incorrect, return None
 def clean_lat_lon(value):
-    if isinstance(value, str):  
+    if isinstance(value, str):  # Ensure value is a string
         value = re.sub(r"[^\d.-]", "", value)  # Remove unwanted characters
     try:
         return float(value)  # Convert to float
@@ -329,8 +341,20 @@ def clean_lat_lon(value):
 crime_data["Latitude"] = crime_data["Latitude"].apply(clean_lat_lon)
 crime_data["Longitude"] = crime_data["Longitude"].apply(clean_lat_lon)
 
+
 # Drop rows where Latitude or Longitude could not be converted
 crime_data = crime_data.dropna(subset=["Latitude", "Longitude"])
+
+# Print the cleaned dataset
+print("Cleaned Data:\n", crime_data.head())
+
+# Save cleaned data (optional)
+crime_data.to_csv("cleaned_eluru_bvrm_mtm_data.csv", index=False)
+
+# Drop rows where Latitude or Longitude could not be converted (NaN values)
+crime_data = crime_data.dropna(subset=["Latitude", "Longitude"])
+
+coords = crime_data[["Latitude", "Longitude"]].values.astype(float)
 
 # Convert severity to numerical values for clustering
 severity_mapping = {"low": 1, "moderate": 2, "high": 3}
@@ -358,7 +382,7 @@ def location_wise_analysis():
             hotspot_lat, hotspot_lon = row["Latitude"], row["Longitude"]
             distance_km = geodesic((user_lat, user_lon), (hotspot_lat, hotspot_lon)).km
 
-            if distance_km <= 5 and row["Crime_severity"].lower() == "high":
+            if distance_km <= 5 and row["Crime_severity"] == "High":
                 nearby_hotspots.append((row["Area Name"], hotspot_lat, hotspot_lon))
 
         if nearby_hotspots:
@@ -388,6 +412,7 @@ def location_wise_analysis():
         else:
             st.warning("⚠ No high-severity crime hotspots found within 5KM.")
 
+location_wise_analysis()
 # Main App Logic
 def main():
     if 'logged_in' not in st.session_state:
