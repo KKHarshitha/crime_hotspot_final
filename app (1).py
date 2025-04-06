@@ -282,26 +282,15 @@ def district_wise_analysis():
 # Function to analyze location-wise crime
 # import pandas as pd
 
-import re
-
 # Load dataset
 crime_data = pd.read_csv("eluru_bvrm_mtm.csv")  # Ensure correct file path
 
 # Remove leading/trailing spaces from column names
 crime_data.columns = crime_data.columns.str.strip()
 
-# Function to convert latitude and longitude from '16.6382° N' to decimal format
-def convert_to_decimal(coord):
-    match = re.match(r"([\d.]+)°\s*([NSEW])", coord.strip())
-    if match:
-        value, direction = match.groups()
-        value = float(value)
-        if direction in ["S", "W"]:  # Convert to negative for South and West
-            value = -value
-        return value
-    return None  # If the format is incorrect, return None
+# Function to clean latitude and longitude
 def clean_lat_lon(value):
-    if isinstance(value, str):  # Ensure value is a string
+    if isinstance(value, str):
         value = re.sub(r"[^\d.-]", "", value)  # Remove unwanted characters
     try:
         return float(value)  # Convert to float
@@ -312,76 +301,73 @@ def clean_lat_lon(value):
 crime_data["Latitude"] = crime_data["Latitude"].apply(clean_lat_lon)
 crime_data["Longitude"] = crime_data["Longitude"].apply(clean_lat_lon)
 
-
 # Drop rows where Latitude or Longitude could not be converted
 crime_data = crime_data.dropna(subset=["Latitude", "Longitude"])
 
-# Print the cleaned dataset
-print("Cleaned Data:\n", crime_data.head())
-
-# Save cleaned data (optional)
-crime_data.to_csv("cleaned_eluru_bvrm_mtm_data.csv", index=False)
-
-# Drop rows where Latitude or Longitude could not be converted (NaN values)
-crime_data = crime_data.dropna(subset=["Latitude", "Longitude"])
-
-coords = crime_data[["Latitude", "Longitude"]].values.astype(float)
-
 # Convert severity to numerical values for clustering
-severity_mapping = {"low": 1, "moderate": 2, "high": 3}
+severity_mapping = {"Low": 1, "Moderate": 2, "High": 3}
 crime_data["Severity_Score"] = crime_data["Crime_severity"].map(severity_mapping)
 
 # Apply DBSCAN clustering
 coords = crime_data[["Latitude", "Longitude"]].values
-db = DBSCAN(eps=10/6371, min_samples=2, metric="haversine").fit(np.radians(coords))  # 5 km radius
-crime_data["Cluster"] = db.labels_
 
-# Function to analyze location-wise crime
-def location_wise_analysis():
-    st.title("📍 Crime Hotspots: Find Risk Level in Your Area")
-    m = folium.Map(location=[20.5937, 78.9629], zoom_start=6)
-    map_data = st_folium(m, height=500, width=700)
+if len(coords) > 0:
+    db = DBSCAN(eps=10/6371, min_samples=2, metric="haversine").fit(np.radians(coords))  # 5 km radius
+    crime_data["Cluster"] = db.labels_
 
-    if map_data and "last_clicked" in map_data:
-        user_location = map_data["last_clicked"]
-        user_lat, user_lon = user_location["lat"], user_location["lng"]
-        st.success(f"✅ Selected Location: ({user_lat}, {user_lon})")
+# Streamlit UI
+st.title("📍 Crime Hotspots: Filter Crime Severity Levels")
 
-        # Identify crime hotspots near selected location
-        nearby_hotspots = []
-        for _, row in crime_data.iterrows():
-            hotspot_lat, hotspot_lon = row["Latitude"], row["Longitude"]
-            distance_km = geodesic((user_lat, user_lon), (hotspot_lat, hotspot_lon)).km
+# Dropdown to filter crime severity
+severity_options = ["Low", "Moderate", "High"]
+selected_severity = st.selectbox("Select Crime Severity Level:", severity_options)
 
-            if distance_km <= 5 and row["Crime_severity"] == "High":
-                nearby_hotspots.append((row["Area Name"], hotspot_lat, hotspot_lon))
+# Create map
+m = folium.Map(location=[16.7107, 81.1004], zoom_start=12)
+map_data = st_folium(m, height=500, width=700)
 
-        if nearby_hotspots:
-            st.subheader("🔥 High-Severity Crime Hotspots (within 5KM radius)")
-            crime_map = folium.Map(location=[user_lat, user_lon], zoom_start=14)
-            
-            # Add user location
-            folium.Marker(
-                location=[user_lat, user_lon],
-                popup="📍 Your Location",
-                icon=folium.Icon(color="blue", icon="user")
+if map_data and "last_clicked" in map_data:
+    user_location = map_data["last_clicked"]
+    user_lat, user_lon = user_location["lat"], user_location["lng"]
+    st.success(f"✅ Selected Location: ({user_lat}, {user_lon})")
+
+    # Identify crime hotspots near selected location
+    nearby_hotspots = []
+    for _, row in crime_data.iterrows():
+        hotspot_lat, hotspot_lon = row["Latitude"], row["Longitude"]
+        distance_km = geodesic((user_lat, user_lon), (hotspot_lat, hotspot_lon)).km
+
+        if distance_km <= 5 and row["Crime_severity"] == selected_severity:
+            nearby_hotspots.append((row["Area Name"], hotspot_lat, hotspot_lon, row["Crime_severity"]))
+
+    if nearby_hotspots:
+        st.subheader(f"🚨 {selected_severity}-Severity Crime Hotspots (within 5KM radius)")
+        crime_map = folium.Map(location=[user_lat, user_lon], zoom_start=14)
+        
+        # Add user location
+        folium.Marker(
+            location=[user_lat, user_lon],
+            popup="📍 Your Location",
+            icon=folium.Icon(color="blue", icon="user")
+        ).add_to(crime_map)
+        
+        # Add hotspots based on selected severity
+        color_mapping = {"Low": "green", "Moderate": "orange", "High": "red"}
+        
+        for city, lat, lon, severity in nearby_hotspots:
+            folium.CircleMarker(
+                location=[lat, lon],
+                radius=10,
+                color=color_mapping[severity],
+                fill=True,
+                fill_color=color_mapping[severity],
+                fill_opacity=0.7,
+                popup=f"{city}: {severity} Severity"
             ).add_to(crime_map)
-            
-            # Add high-severity hotspots
-            for city, lat, lon in nearby_hotspots:
-                folium.CircleMarker(
-                    location=[lat, lon],
-                    radius=10,
-                    color="red",
-                    fill=True,
-                    fill_color="red",
-                    fill_opacity=0.7,
-                    popup=f"{city}: High Severity"
-                ).add_to(crime_map)
-            
-            folium_static(crime_map)
-        else:
-            st.warning("⚠ No high-severity crime hotspots found within 5KM.")
+        
+        folium_static(crime_map)
+    else:
+        st.warning(f"⚠ No {selected_severity}-severity crime hotspots found within 5KM.")
 # Main App Logic
 def main():
     if 'logged_in' not in st.session_state:
