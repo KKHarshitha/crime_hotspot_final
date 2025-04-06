@@ -148,8 +148,11 @@ def login_page():
         st.success("Logged in successfully!")
         st.rerun()
 
-
 import math
+
+# City-wise Crime Analysis
+import math
+import streamlit as st
 
 # City-wise Crime Analysis
 def city_wise_analysis():
@@ -167,42 +170,47 @@ def city_wise_analysis():
         # Adjust population based on the year (using compounded 1% annual growth)
         year_diff = year - 2015
         pop = pop * (1.01 ** year_diff)  # 1% yearly growth using exponential formula
-        
+
         try:
             # Predict crime rate using the model
-            crime_rate = model.predict([[int(year), int(city_code), pop, int(crime_code)]])[0]
+            crime_rate = float(model.predict([[int(year), int(city_code), pop, int(crime_code)]])[0])
         except Exception as e:
             st.error(f"Prediction error: {e}")
             st.stop()
 
-        # Calculate estimated number of cases
-        cases = math.ceil(crime_rate * pop)
-        st.write(f"🔍 Debug: Predicted Cases = {cases}")
-
-        # 🔴 Improved Crime Severity Categories Based on Predicted Cases
-        if cases <= 50:
-            crime_status = "🟢 Very Low Crime Area"
-            color = "green"
-        elif 51 <= cases <= 85:
+        # Ensure proper rounding for classification
+        crime_rate = math.floor(crime_rate)  # Round down for correct classification
+        
+        # Debugging print statements
+        st.write(f"🔍 Debug Before Classification: Crime Rate = {crime_rate}")
+        st.write(f"✅ Type of Crime Rate: {type(crime_rate)}")  # Ensure it's a float/int
+        
+        # 🔴 Improved Crime Severity Categories
+        if crime_rate <= 6:
             crime_status = "🟡 Low Crime Area"
             color = "yellow"
-        elif 86 <= cases <= 120:
+        elif 7 <= crime_rate <= 11:
             crime_status = "🟠 Moderate Crime Area"
             color = "orange"
-        elif 121 <= cases <= 170:
+        elif 12 <= crime_rate <= 18:
             crime_status = "🔴 High Crime Area"
             color = "red"
         else:
             crime_status = "🔥 Extremely High Crime Area"
             color = "darkred"
-        
+
+        # Debugging print statement after classification
+        st.write(f"🔍 Debug After Classification: Crime Severity = {crime_status}")
+
+        # Calculate estimated number of cases
+        cases = math.ceil(crime_rate * pop)
+
         # Display results with styling
         st.subheader("📊 Prediction Results")
         st.write(f"🏙 **City:** {city_names[city_code]}")
         st.write(f"⚖ **Crime Type:** {crimes_names[crime_code]}")
         st.write(f"📅 **Year:** {year}")
         st.write(f"👥 **Population:** {pop:.2f} Lakhs")
-        st.write(f"🔍 Debug Before Classification: Predicted Cases = {cases}")
         st.markdown(f"<h3 style='color:{color};'>🚔 Predicted Cases: {cases}</h3>", unsafe_allow_html=True)
         st.markdown(f"<h3 style='color:{color};'>⚠ Crime Severity: {crime_status}</h3>", unsafe_allow_html=True)
 
@@ -210,80 +218,59 @@ def city_wise_analysis():
         st.markdown("### 💡 Safety Tip:")
         st.write(f"🛑 {crime_suggestions[crime_code]}")
 
-# District wise
+
+        
+# District-wise Crime Analysis
 def district_wise_analysis():
     st.title("🌍 District-wise Crime Analysis")
-    
-    # Ensure crime_data is not empty
-    if crime_data.empty:
-        st.error("❌ Error: crime_data is empty! Please check the data source.")
-        return
-    
-    # Ensure 'state/ut' column exists and normalize column names
-    crime_data.columns = crime_data.columns.str.strip().str.lower()
-    if 'state/ut' not in crime_data.columns:
-        st.error("❌ Error: 'state/ut' column not found in dataset!")
-        return
-    
-    state = st.selectbox('Select a State/UT:', crime_data['state/ut'].dropna().unique())
-    
+    state = st.selectbox('Select a State/UT:', crime_data['state/ut'].unique())
+
     if state:
         # Filter data for the selected state
         state_data = crime_data[crime_data['state/ut'] == state]
-        
-        if state_data.empty:
-            st.warning("No crime data available for this state.")
-            return
         
         # Compute crime severity for each district
         district_severity = {}
         trend_data = {}  # To store crime severity trends for each district
 
-        for district in state_data['district'].dropna().unique():
+        for district in state_data['district'].unique():
             district_data = state_data[state_data['district'] == district]
             
             # Calculate crime severity for 2024
-            if 2024 in district_data['year'].values:
-                district_severity[district] = calculate_crime_severity(district_data[district_data['year'] == 2024])
-            else:
-                district_severity[district] = 0  # Default to zero if no data
+            district_severity[district] = calculate_crime_severity(district_data[district_data['year'] == 2024])
             
-            # Calculate crime severity for previous years
+            # Calculate crime severity for 2022, 2023, and 2024 (trend data)
             trend_data[district] = {
                 year: calculate_crime_severity(district_data[district_data['year'] == year])
-                if year in district_data['year'].values else 0
                 for year in [2023, 2024]
             }
         
         # Display Crime Severity Map
         st.subheader(f'Crime Severity Index for Districts in {state}')
         
-        if 'state' in location_data.columns and 'district' in location_data.columns:
-            state_location = location_data[location_data['state'] == state]
-            if not state_location.empty:
-                latitude, longitude = state_location.iloc[0]['latitude'], state_location.iloc[0]['longitude']
-                m = folium.Map(location=[latitude, longitude], zoom_start=7)
+        state_location = location_data[location_data['State'] == state]
+        if not state_location.empty:
+            latitude, longitude = state_location.iloc[0]['Latitude'], state_location.iloc[0]['Longitude']
+            m = folium.Map(location=[latitude, longitude], zoom_start=7)
 
-                for district, severity in district_severity.items():
-                    district_row = location_data[(location_data['state'] == state) & (location_data['district'] == district)]
-                    if not district_row.empty:
-                        lat, lon = district_row.iloc[0]['latitude'], district_row.iloc[0]['longitude']
-                        color = 'green' if severity < 15 else 'orange' if severity < 25 else 'red'
-                        folium.CircleMarker(
-                            location=[lat, lon],
-                            radius=10,
-                            color=color,
-                            fill=True,
-                            fill_color=color,
-                            fill_opacity=0.7,
-                            popup=f"{district}: {severity}"
-                        ).add_to(m)
-                
-                folium_static(m)
-            else:
-                st.warning("Coordinates for the selected state were not found.")
+            for district, severity in district_severity.items():
+                district_row = location_data[(location_data['State'] == state) & (location_data['District'] == district)]
+                if not district_row.empty:
+                    lat, lon = district_row.iloc[0]['Latitude'], district_row.iloc[0]['Longitude']
+                    color = 'green' if severity < 15 else 'orange' if severity < 25 else 'red'
+                    folium.CircleMarker(
+                        location=[lat, lon],
+                        radius=10,
+                        color=color,
+                        fill=True,
+                        fill_color=color,
+                        fill_opacity=0.7,
+                        popup=f"{district}: {severity}"
+                    ).add_to(m)
+            
+            folium_static(m)
         else:
-            st.warning("Location dataset is missing required columns.")
+            st.warning("Coordinates for the selected state were not found.")
         
         # Crime Severity Table
         st.subheader("Crime Severity Index by District")
@@ -300,13 +287,14 @@ def district_wise_analysis():
         trend_df = pd.DataFrame(trend_data[selected_district], index=["Crime Severity Index"]).T
         st.line_chart(trend_df)
         
-        # Classification of severity levels
-        if crime_severity_index <= 6:
-            st.markdown("<div class='success-alert'>🟢 Low Crime Area</div>", unsafe_allow_html=True)
-        elif 7 <= crime_severity_index <= 11:
-            st.markdown("<div class='warning-alert'>🟡 Moderate Crime Area</div>", unsafe_allow_html=True)
+        if crime_severity_index < 10:
+            st.markdown("<div class='success-alert'>🟢 This area is relatively safe.</div>", unsafe_allow_html=True)
+        elif 11<= crime_severity_index <= 25:
+            st.markdown("<div class='warning-alert'>🟠 Moderate risk; stay cautious.</div>", unsafe_allow_html=True)
         else:
-            st.markdown("<div class='danger-alert'>🔴 High Crime Area</div>", unsafe_allow_html=True)
+            st.markdown("<div class='danger-alert'>🔴 High risk! Precaution is advised.</div>", unsafe_allow_html=True)
+# Location-wise Crime Analysis
+
 # Location-wise Crime Analysis
 # Load dataset from Pickle file
 # Function to analyze location-wise crime
