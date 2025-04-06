@@ -151,7 +151,7 @@ def login_page():
 # City-wise Crime Analysis
 
 import math
-
+# City-wise Crime Analysis
 def city_wise_analysis():
     st.title("🏙 City-wise Crime Analysis")
     
@@ -164,21 +164,16 @@ def city_wise_analysis():
         # Fetch population data for the selected city
         pop = population.get(city_code, 0)
 
-        # Adjust population based on the year (assuming 5% annual growth)
+        # Adjust population based on the year (assuming 2% annual growth for realistic scaling)
         year_diff = year - 2015
-        pop = pop * (1.05 ** year_diff)  # 5% yearly growth
+        pop = pop * (1.02 ** year_diff)  # 2% yearly growth
 
         try:
             # Predict crime rate using the model
             crime_rate = model.predict([[int(year), int(city_code), pop, int(crime_code)]])[0]
-
-            # Scale crime rate dynamically
-            if crime_rate < 0.01:
-                crime_rate *= 100  # Boost very low values
-            elif crime_rate < 1:
-                crime_rate *= 10  # Moderate increase
-            else:
-                crime_rate *= 1  # Keep higher values unchanged
+            
+            # Adjust crime rate scaling based on data distribution
+            crime_rate *= 10  # Adjust factor if needed
 
         except Exception as e:
             st.error(f"Prediction error: {e}")
@@ -187,19 +182,22 @@ def city_wise_analysis():
         # Calculate estimated number of cases
         cases = math.ceil(crime_rate * pop)
 
-        # Determine crime severity status
-        if crime_rate <= 1:
+        # 🔴 Improved Crime Severity Categories
+        if crime_rate < 1:
             crime_status = "🟢 Very Low Crime Area"
             color = "green"
-        elif crime_rate <= 5:
+        elif crime_rate < 10:
             crime_status = "🟡 Low Crime Area"
             color = "yellow"
-        elif crime_rate <= 20:
-            crime_status = "🟠 High Crime Area"
+        elif crime_rate < 50:
+            crime_status = "🟠 Moderate Crime Area"
             color = "orange"
-        else:
-            crime_status = "🔴 Very High Crime Area"
+        elif crime_rate < 200:
+            crime_status = "🔴 High Crime Area"
             color = "red"
+        else:
+            crime_status = "🔥 Extremely High Crime Area"
+            color = "darkred"
 
         # Display results
         st.subheader("📊 Prediction Results")
@@ -212,7 +210,7 @@ def city_wise_analysis():
 
         # Display crime prevention suggestion
         st.markdown("### 💡 Safety Tip:")
-        st.write(f"🔍 Debug: Crime Rate = {crime_rate}")
+        st.write(f"🔍 Debug: Crime Rate = {crime_rate:.2f}")
 
 
 # District-wise Crime Analysis
