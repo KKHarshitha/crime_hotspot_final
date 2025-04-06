@@ -163,7 +163,8 @@ def city_wise_analysis():
         
         # Adjust population based on the year (assuming 1% annual growth)
         year_diff = year - 2015
-        pop = pop + 0.01 * year_diff * pop
+        pop = pop * (1.02 ** year_diff)  # 2% yearly growth
+
         
         try:
             # Predict crime rate using the model
@@ -176,19 +177,19 @@ def city_wise_analysis():
         cases = math.ceil(crime_rate * pop)
         
         # Determine crime severity status
-        if crime_rate <= 0.1:
+        if crime_rate <= 5:
             crime_status = "🟢 Very Low Crime Area"
             color = "green"
-        elif crime_rate <= 19:
+        elif crime_rate <= 25:
             crime_status = "🟡 Low Crime Area"
             color = "yellow"
-        elif crime_rate <= 98:
+        elif crime_rate <= 75:
             crime_status = "🟠 High Crime Area"
             color = "orange"
         else:
             crime_status = "🔴 Very High Crime Area"
             color = "red"
-
+            
         # Display results with styling
         st.subheader("📊 Prediction Results")
         st.write(f"🏙 **City:** {city_names[city_code]}")
@@ -200,7 +201,8 @@ def city_wise_analysis():
 
         # Display crime prevention suggestion
         st.markdown("### 💡 Safety Tip:")
-        st.write(f"🛑 {crime_suggestions[crime_code]}")
+        #st.write(f"🛑 {crime_suggestions[crime_code]}")
+        st.write(f"🔍 Debug: Crime Rate = {crime_rate}")
         
 # District-wise Crime Analysis
 def district_wise_analysis():
