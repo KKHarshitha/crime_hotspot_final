@@ -210,57 +210,80 @@ def city_wise_analysis():
         st.markdown("### 💡 Safety Tip:")
         st.write(f"🛑 {crime_suggestions[crime_code]}")
 
-# District-wise Crime Analysis
+# District wise
 def district_wise_analysis():
     st.title("🌍 District-wise Crime Analysis")
-    state = st.selectbox('Select a State/UT:', crime_data['state/ut'].unique())
-
+    
+    # Ensure crime_data is not empty
+    if crime_data.empty:
+        st.error("❌ Error: crime_data is empty! Please check the data source.")
+        return
+    
+    # Ensure 'state/ut' column exists and normalize column names
+    crime_data.columns = crime_data.columns.str.strip().str.lower()
+    if 'state/ut' not in crime_data.columns:
+        st.error("❌ Error: 'state/ut' column not found in dataset!")
+        return
+    
+    state = st.selectbox('Select a State/UT:', crime_data['state/ut'].dropna().unique())
+    
     if state:
         # Filter data for the selected state
         state_data = crime_data[crime_data['state/ut'] == state]
+        
+        if state_data.empty:
+            st.warning("No crime data available for this state.")
+            return
         
         # Compute crime severity for each district
         district_severity = {}
         trend_data = {}  # To store crime severity trends for each district
 
-        for district in state_data['district'].unique():
+        for district in state_data['district'].dropna().unique():
             district_data = state_data[state_data['district'] == district]
             
             # Calculate crime severity for 2024
-            district_severity[district] = calculate_crime_severity(district_data[district_data['year'] == 2024])
+            if 2024 in district_data['year'].values:
+                district_severity[district] = calculate_crime_severity(district_data[district_data['year'] == 2024])
+            else:
+                district_severity[district] = 0  # Default to zero if no data
             
-            # Calculate crime severity for 2022, 2023, and 2024 (trend data)
+            # Calculate crime severity for previous years
             trend_data[district] = {
                 year: calculate_crime_severity(district_data[district_data['year'] == year])
+                if year in district_data['year'].values else 0
                 for year in [2023, 2024]
             }
         
         # Display Crime Severity Map
         st.subheader(f'Crime Severity Index for Districts in {state}')
         
-        state_location = location_data[location_data['State'] == state]
-        if not state_location.empty:
-            latitude, longitude = state_location.iloc[0]['Latitude'], state_location.iloc[0]['Longitude']
-            m = folium.Map(location=[latitude, longitude], zoom_start=7)
+        if 'state' in location_data.columns and 'district' in location_data.columns:
+            state_location = location_data[location_data['state'] == state]
+            if not state_location.empty:
+                latitude, longitude = state_location.iloc[0]['latitude'], state_location.iloc[0]['longitude']
+                m = folium.Map(location=[latitude, longitude], zoom_start=7)
 
-            for district, severity in district_severity.items():
-                district_row = location_data[(location_data['State'] == state) & (location_data['District'] == district)]
-                if not district_row.empty:
-                    lat, lon = district_row.iloc[0]['Latitude'], district_row.iloc[0]['Longitude']
-                    color = 'green' if severity < 15 else 'orange' if severity < 25 else 'red'
-                    folium.CircleMarker(
-                        location=[lat, lon],
-                        radius=10,
-                        color=color,
-                        fill=True,
-                        fill_color=color,
-                        fill_opacity=0.7,
-                        popup=f"{district}: {severity}"
-                    ).add_to(m)
-            
-            folium_static(m)
+                for district, severity in district_severity.items():
+                    district_row = location_data[(location_data['state'] == state) & (location_data['district'] == district)]
+                    if not district_row.empty:
+                        lat, lon = district_row.iloc[0]['latitude'], district_row.iloc[0]['longitude']
+                        color = 'green' if severity < 15 else 'orange' if severity < 25 else 'red'
+                        folium.CircleMarker(
+                            location=[lat, lon],
+                            radius=10,
+                            color=color,
+                            fill=True,
+                            fill_color=color,
+                            fill_opacity=0.7,
+                            popup=f"{district}: {severity}"
+                        ).add_to(m)
+                
+                folium_static(m)
+            else:
+                st.warning("Coordinates for the selected state were not found.")
         else:
-            st.warning("Coordinates for the selected state were not found.")
+            st.warning("Location dataset is missing required columns.")
         
         # Crime Severity Table
         st.subheader("Crime Severity Index by District")
@@ -277,13 +300,13 @@ def district_wise_analysis():
         trend_df = pd.DataFrame(trend_data[selected_district], index=["Crime Severity Index"]).T
         st.line_chart(trend_df)
         
-        if crime_severity_index < 10:
-            st.markdown("<div class='success-alert'>🟢 This area is relatively safe.</div>", unsafe_allow_html=True)
-        elif 11<= crime_severity_index <= 25:
-            st.markdown("<div class='warning-alert'>🟠 Moderate risk; stay cautious.</div>", unsafe_allow_html=True)
+        # Classification of severity levels
+        if crime_severity_index <= 6:
+            st.markdown("<div class='success-alert'>🟢 Low Crime Area</div>", unsafe_allow_html=True)
+        elif 7 <= crime_severity_index <= 11:
+            st.markdown("<div class='warning-alert'>🟡 Moderate Crime Area</div>", unsafe_allow_html=True)
         else:
-            st.markdown("<div class='danger-alert'>🔴 High risk! Precaution is advised.</div>", unsafe_allow_html=True)
-
+            st.markdown("<div class='danger-alert'>🔴 High Crime Area</div>", unsafe_allow_html=True)
 # Location-wise Crime Analysis
 # Load dataset from Pickle file
 # Function to analyze location-wise crime
