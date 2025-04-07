@@ -130,23 +130,7 @@ def calculate_crime_severity(df):
     return round(crime_index, 2)
 
 # Login Page
-def login_page():
-    st.title("🔐 Login Page")
-    name = st.text_input("Name")
-    age = st.number_input("Age", min_value=0, max_value=120)
-    married_status = st.selectbox("Married Status", ["Single", "Married", "Divorced", "Widowed"])
-    gender = st.radio("Gender", ["Male", "Female", "Other"])
-    
-    if st.button("Login"):
-        st.session_state['logged_in'] = True
-        st.session_state['user_info'] = {
-            'name': name,
-            'age': age,
-            'married_status': married_status,
-            'gender': gender
-        }
-        st.success("Logged in successfully!")
-        st.rerun()
+
 
 # City-wise Crime Analysis
 def city_wise_analysis():
@@ -366,25 +350,15 @@ def location_wise_analysis():
 
 # Main App Logic
 def main():
-    if 'logged_in' not in st.session_state:
-        st.session_state['logged_in'] = False
 
-    if not st.session_state['logged_in']:
-        login_page()
-    else:
-        st.sidebar.title(f"Welcome, {st.session_state['user_info']['name']}!")
-        st.sidebar.write(f"Age: {st.session_state['user_info']['age']}")
-        st.sidebar.write(f"Married Status: {st.session_state['user_info']['married_status']}")
-        st.sidebar.write(f"Gender: {st.session_state['user_info']['gender']}")
+    option = st.sidebar.radio("Choose an Analysis:", ["City-wise Crime Analysis", "District-wise Crime Analysis", "Location-wise Crime Analysis"])
         
-        option = st.sidebar.radio("Choose an Analysis:", ["City-wise Crime Analysis", "District-wise Crime Analysis", "Location-wise Crime Analysis"])
-        
-        if option == "City-wise Crime Analysis":
-            city_wise_analysis()
-        elif option == "District-wise Crime Analysis":
-            district_wise_analysis()
-        elif option == "Location-wise Crime Analysis":
-            location_wise_analysis()
+    if option == "City-wise Crime Analysis":
+        city_wise_analysis()
+    elif option == "District-wise Crime Analysis":
+        district_wise_analysis()
+    elif option == "Location-wise Crime Analysis":
+        location_wise_analysis()
 
 if __name__ == "__main__":
     main()
