@@ -301,51 +301,7 @@ db = DBSCAN(eps=10 / 6371, min_samples=2, metric="haversine").fit(np.radians(coo
 location_crime_data["Cluster"] = db.labels_
 
 # Location-wise crime analysis function
-'''def location_wise_analysis():
-    st.title("📍 Crime Hotspots: Find Risk Level in Your Area")
-    base_map = folium.Map(location=[16.7100, 81.0950], zoom_start=10)  # Centered around Eluru-BVRM-MTM
-    map_data = st_folium(base_map, height=500, width=700)
-
-    if map_data and "last_clicked" in map_data:
-        user_lat = map_data["last_clicked"]["lat"]
-        user_lon = map_data["last_clicked"]["lng"]
-        st.success(f"✅ Selected Location: ({user_lat:.4f}, {user_lon:.4f})")
-
-        # Find nearby high-severity hotspots
-        hotspots = []
-        for _, row in location_crime_data.iterrows():
-            hotspot_lat, hotspot_lon = row["Latitude"], row["Longitude"]
-            if pd.notnull(hotspot_lat) and pd.notnull(hotspot_lon):
-                distance_km = geodesic((user_lat, user_lon), (hotspot_lat, hotspot_lon)).km
-                if distance_km <= 5 and row["Crime_severity"] in ["High", "Moderate"]:
-                    hotspots.append((row["Area Name"], hotspot_lat, hotspot_lon))
-
-        if hotspots:
-            st.subheader("🔥 High-Severity Crime Hotspots within 5KM")
-            hotspot_map = folium.Map(location=[user_lat, user_lon], zoom_start=14)
-
-            # Mark user location
-            folium.Marker(
-                location=[user_lat, user_lon],
-                popup="📍 Your Location",
-                icon=folium.Icon(color="blue", icon="user")
-            ).add_to(hotspot_map)
-
-            # Mark hotspots
-            for area, lat, lon in hotspots:
-                folium.CircleMarker(
-                    location=[lat, lon],
-                    radius=8,
-                    color="red",
-                    fill=True,
-                    fill_color="red",
-                    fill_opacity=0.7,
-                    popup=f"{area}: High Severity"
-                ).add_to(hotspot_map)
-
-            folium_static(hotspot_map)
-        else:
-            st.warning("✅ No high-severity crime hotspots found within 5KM.")'''
+   
 def location_wise_analysis():
     st.title("📍 Crime Hotspots: Find Risk Level in Your Area")
 
